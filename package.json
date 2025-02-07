@@ -1,5 +1,5 @@
 {
-  "name": "@charlesjackson/git-push",
+  "name": "@versalarchitect/push",
   "version": "1.0.0",
   "description": "A beautiful git push CLI tool with AI-powered commit messages",
   "type": "module",
@@ -9,12 +9,12 @@
   "files": [
     "dist",
     "scripts",
-    "models"
+    "README.md"
   ],
   "scripts": {
     "build": "bun build ./src/push.ts --outdir ./dist --target node",
-    "prepublish": "bun run build",
-    "postinstall": "bun run scripts/setup-model.ts"
+    "prepare": "bun run build",
+    "prepublishOnly": "bun run build"
   },
   "keywords": [
     "git",
@@ -22,10 +22,27 @@
     "commit",
     "push",
     "ai",
-    "llama"
+    "llama",
+    "ollama",
+    "automation"
   ],
   "author": "Charles Jackson",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/versalarchitect/push.git"
+  },
+  "bugs": {
+    "url": "https://github.com/versalarchitect/push/issues"
+  },
+  "homepage": "https://github.com/versalarchitect/push#readme",
+  "engines": {
+    "bun": ">=1.0.0",
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5.0.0"

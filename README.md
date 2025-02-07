@@ -1,58 +1,54 @@
-# Git Push CLI
+# Push
 
-A beautiful git push CLI tool with AI-powered commit messages. This tool makes git commits and pushes more enjoyable with:
+A beautiful git push CLI tool with AI-powered commit messages. This tool automatically generates meaningful commit messages using AI, stages your changes, and pushes them to your repository with a delightful animation.
 
-- 🎨 Beautiful ASCII art animations
-- 🤖 AI-powered commit message generation (using Ollama)
-- 🚀 Simple one-command workflow
-- ✨ Automatic staging of changes
+## Features
+
+- 🤖 AI-powered commit message generation
+- ✨ Beautiful terminal animations
+- 🚀 Simple one-command git workflow
+- 🔒 Secure authentication handling
+- 📝 Fallback to conventional commits
 
 ## Installation
 
 ```bash
-# Install globally with bun
-bun install -g @charlesjackson/git-push
+# Install globally using bun
+bun install -g @versalarchitect/push
 
-# Install Ollama (optional, for AI commit messages)
-curl https://ollama.ai/install.sh | sh
-ollama pull codellama
+# Or using npm
+npm install -g @versalarchitect/push
 ```
 
 ## Usage
 
-Simply run in any git repository:
+Simply run `push` in your git repository:
 
 ```bash
+# Auto-generate commit message and push
 push
-```
 
-Or with a custom commit message:
-
-```bash
+# Or provide your own commit message
 push "feat: add new awesome feature"
 ```
 
-### Features
-
-1. **AI-Powered Commit Messages**
-   - If Ollama is installed, it automatically generates meaningful commit messages based on your changes
-   - Falls back to listing changed files if AI generation is not available
-
-2. **Beautiful Animations**
-   - Shows a fun ASCII art animation while pushing
-   - Displays a success message with style
-
-3. **Simple Workflow**
-   - Automatically stages all changes
-   - Generates commit message (AI or fallback)
-   - Pushes to remote
-   - All in one command!
-
 ## Requirements
 
-- Bun 1.0.0 or higher
+- Bun >= 1.0.0 or Node.js >= 18.0.0
 - Git
-- Ollama (optional, for AI commit messages)
+- Ollama (for AI-powered commit messages)
+
+## Configuration
+
+The tool uses Ollama for AI commit message generation. Make sure you have Ollama running locally:
+
+```bash
+# Install Ollama (if not already installed)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull the CodeLlama model
+ollama pull codellama
+```
 
 ## License
 
