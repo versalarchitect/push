@@ -1,0 +1,36 @@
+{
+  "name": "@charlesjackson/git-push",
+  "version": "1.0.0",
+  "description": "A beautiful git push CLI tool with AI-powered commit messages",
+  "type": "module",
+  "bin": {
+    "push": "./dist/push.js"
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "models"
+  ],
+  "scripts": {
+    "build": "bun build ./src/push.ts --outdir ./dist --target node",
+    "prepublish": "bun run build",
+    "postinstall": "bun run scripts/setup-model.ts"
+  },
+  "keywords": [
+    "git",
+    "cli",
+    "commit",
+    "push",
+    "ai",
+    "llama"
+  ],
+  "author": "Charles Jackson",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "bun": "^1.0.26"
+  }
+}
