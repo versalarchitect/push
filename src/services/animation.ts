@@ -1,23 +1,51 @@
 import { setTimeout } from "node:timers/promises";
-import type { AnimationFrame, AnimationConfig } from "../types";
+import type { AnimationConfig } from "../types";
 import { ANIMATION_CONFIG } from "../config";
 
+const CUBE_FRAMES = [
+  // Frame 1: Front view
+  `
+     ┌───────────┐
+     │  PUSHING  │
+     │    TO     │
+     │   GIT     │
+     │   ...     │
+     └───────────┘
+  `,
+  // Frame 2: Right tilt
+  `
+     ┌───────────┐
+     │  PUSHING ╱│
+     │    TO   ╱ │
+     │   GIT  ╱  │
+     │  ...  ╱   │
+     └──────╱────┘
+  `,
+  // Frame 3: Full right
+  `
+     ┌───────────┐
+     │╲  PUSHING │
+     │ ╲   TO    │
+     │  ╲  GIT   │
+     │   ╲ ...   │
+     └────╲──────┘
+  `,
+  // Frame 4: Left tilt
+  `
+     ┌───────────┐
+     │╱ PUSHING  │
+     │╱   TO     │
+     │╱   GIT    │
+     │╱   ...    │
+     └╱──────────┘
+  `
+];
+
 export class AnimationService {
-  private readonly frames: AnimationFrame[];
-  private readonly successFrame: AnimationFrame;
   private readonly config: AnimationConfig;
+  private isAnimating = false;
 
-  constructor(
-    frames: AnimationFrame[],
-    successFrame: AnimationFrame,
-    config: AnimationConfig = ANIMATION_CONFIG
-  ) {
-    if (!frames.length) {
-      throw new Error('Animation frames array cannot be empty');
-    }
-
-    this.frames = frames;
-    this.successFrame = successFrame;
+  constructor(config: AnimationConfig = ANIMATION_CONFIG) {
     this.config = this.validateConfig(config);
   }
 
@@ -26,20 +54,52 @@ export class AnimationService {
    * @throws {Error} If animation is interrupted
    */
   async animate(): Promise<void> {
+    if (this.isAnimating) {
+      return;
+    }
+
     try {
+      this.isAnimating = true;
       let frameIndex = 0;
-      const totalFrames = this.frames.length * this.config.totalSpins;
+      const totalFrames = CUBE_FRAMES.length * this.config.totalSpins;
+
+      // Clear any previous output
+      console.clear();
       
-      while (frameIndex < totalFrames) {
-        await this.renderFrame(frameIndex);
+      while (frameIndex < totalFrames && this.isAnimating) {
+        const currentFrame = CUBE_FRAMES[frameIndex % CUBE_FRAMES.length];
+        if (currentFrame) {
+          this.renderFrame(currentFrame);
+          await setTimeout(this.getSpeed(frameIndex));
+        }
         frameIndex++;
       }
 
-      this.renderSuccessFrame();
+      // Show success message
+      if (this.isAnimating) {
+        console.clear();
+        console.log(`
+     ✨ Push completed! ✨
+     
+     ┌─────────────┐
+     │  SUCCESS!   │
+     │   🚀 → 🌟   │
+     └─────────────┘
+        `);
+      }
     } catch (error) {
       console.error('Animation interrupted:', error instanceof Error ? error.message : 'Unknown error');
       this.clearScreen();
+    } finally {
+      this.isAnimating = false;
     }
+  }
+
+  /**
+   * Stops the animation
+   */
+  stop(): void {
+    this.isAnimating = false;
   }
 
   /**
@@ -60,27 +120,27 @@ export class AnimationService {
   }
 
   /**
-   * Renders a single animation frame
+   * Gets the current animation speed based on progress
    * @private
    */
-  private async renderFrame(frameIndex: number): Promise<void> {
-    this.clearScreen();
-    console.log(this.frames[frameIndex % this.frames.length]);
-    
+  private getSpeed(frameIndex: number): number {
+    const progress = frameIndex / (CUBE_FRAMES.length * this.config.totalSpins);
     const speedIndex = Math.min(
-      Math.floor(frameIndex / this.frames.length),
+      Math.floor(progress * this.config.speeds.length),
       this.config.speeds.length - 1
     );
-    await setTimeout(this.config.speeds[speedIndex]);
+    return this.config.speeds[speedIndex] ?? 100; // Fallback to 100ms if undefined
   }
 
   /**
-   * Renders the success frame
+   * Renders a single animation frame
    * @private
    */
-  private renderSuccessFrame(): void {
+  private renderFrame(frame: string): void {
     this.clearScreen();
-    console.log(this.successFrame);
+    console.log("\n");  // Add some padding
+    console.log(frame);
+    console.log("\n");
   }
 
   /**

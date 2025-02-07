@@ -48,6 +48,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "bun": "^1.0.26"
+    "bun": "^1.0.26",
+    "cli-spinners": "^3.2.0"
   }
 }
