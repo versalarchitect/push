@@ -1,19 +1,102 @@
 import { spawnSync } from "node:child_process";
 import type { GitError } from "../types";
+import { GitErrorCode, GitOperationError } from "../types";
 
 export class GitService {
   private async execCommand(command: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
     const process = spawnSync(command, args, { encoding: 'utf8' });
+    
+    // Handle process errors (e.g. git not found)
     if (process.error) {
-      throw process.error;
+      const error = process.error as NodeJS.ErrnoException;
+      if (error.code === 'ENOENT') {
+        throw new GitOperationError(
+          GitErrorCode.UNKNOWN,
+          'Git is not installed or not in PATH'
+        );
+      }
+      throw new GitOperationError(
+        GitErrorCode.NETWORK_ERROR,
+        error.message,
+        error
+      );
     }
+
+    // Handle non-zero exit codes
     if (process.status !== 0) {
-      throw new Error(`Command failed: ${process.stderr}`);
+      const stderr = process.stderr?.toString() || '';
+      throw new GitOperationError(
+        this.determineErrorCode(stderr),
+        stderr || 'Command failed without error message',
+        new Error(stderr)
+      );
     }
+
+    // Handle missing output
+    if (!process.stdout && !process.stderr) {
+      throw new GitOperationError(
+        GitErrorCode.UNKNOWN,
+        'Command produced no output'
+      );
+    }
+
     return {
-      stdout: process.stdout || '',
-      stderr: process.stderr || ''
+      stdout: process.stdout?.toString() || '',
+      stderr: process.stderr?.toString() || ''
     };
+  }
+
+  private determineErrorCode(stderr: string): GitErrorCode {
+    const errorMessage = stderr.toLowerCase();
+    
+    if (errorMessage.includes('authentication') || errorMessage.includes('authorization')) {
+      return GitErrorCode.AUTH_FAILED;
+    }
+    if (errorMessage.includes('remote') && errorMessage.includes('not found')) {
+      return GitErrorCode.NO_REMOTE;
+    }
+    if (errorMessage.includes('merge conflict')) {
+      return GitErrorCode.MERGE_CONFLICT;
+    }
+    if (errorMessage.includes('uncommitted changes')) {
+      return GitErrorCode.UNCOMMITTED_CHANGES;
+    }
+    if (errorMessage.includes('network') || errorMessage.includes('connection')) {
+      return GitErrorCode.NETWORK_ERROR;
+    }
+    return GitErrorCode.UNKNOWN;
+  }
+
+  private handleGitError(error: unknown): never {
+    if (error instanceof GitOperationError) {
+      throw error;
+    }
+    
+    if (error instanceof Error) {
+      throw new GitOperationError(
+        GitErrorCode.UNKNOWN,
+        error.message,
+        error
+      );
+    }
+    
+    throw new GitOperationError(
+      GitErrorCode.UNKNOWN,
+      'An unknown error occurred during git operation'
+    );
+  }
+
+  /**
+   * Checks if remote origin exists
+   * @private
+   */
+  private async hasRemoteOrigin(): Promise<boolean> {
+    try {
+      await this.execCommand('git', ['remote', 'get-url', 'origin']);
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
@@ -76,7 +159,20 @@ export class GitService {
    */
   async push(): Promise<void> {
     try {
-      // First check if remote exists and is accessible
+      // First check if remote origin exists
+      if (!await this.hasRemoteOrigin()) {
+        throw new Error(
+          'No remote origin configured. Please set up a remote repository:\n\n' +
+          '1. Create a repository on GitHub/GitLab/etc.\n' +
+          '2. Then run one of these commands:\n\n' +
+          '   # For a new repository:\n' +
+          '   git remote add origin <repository-url>\n\n' +
+          '   # For an existing repository:\n' +
+          '   git remote set-url origin <repository-url>'
+        );
+      }
+
+      // Get remote URL
       const { stdout: remoteUrl } = await this.execCommand('git', ['remote', 'get-url', 'origin']);
       
       // Check if using HTTPS
@@ -141,29 +237,13 @@ export class GitService {
    * @private
    */
   private isAuthError(error: unknown): boolean {
+    if (error instanceof GitOperationError) {
+      return error.code === GitErrorCode.AUTH_FAILED;
+    }
     if (error instanceof Error) {
-      const errorMsg = error.message.toLowerCase();
-      return (
-        errorMsg.includes('authentication failed') ||
-        errorMsg.includes('permission denied') ||
-        errorMsg.includes('403') ||
-        errorMsg.includes('401')
-      );
+      const message = error.message.toLowerCase();
+      return message.includes('authentication') || message.includes('authorization');
     }
     return false;
-  }
-
-  /**
-   * Handles git command errors
-   * @private
-   */
-  private handleGitError(error: unknown): GitError {
-    if (this.isGitError(error)) {
-      return error;
-    }
-    if (error instanceof Error) {
-      return Object.assign(error, { code: 1 }) as GitError;
-    }
-    return new Error('Git operation failed') as GitError;
   }
 } 

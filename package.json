@@ -1,6 +1,6 @@
 {
   "name": "@versalarchitect/push",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A beautiful git push CLI tool with AI-powered commit messages",
   "type": "module",
   "bin": {

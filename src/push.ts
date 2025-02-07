@@ -4,6 +4,7 @@ import { AIService } from "./services/ai";
 import { AnimationService } from "./services/animation";
 import { ERROR_MESSAGES } from "./config";
 import { frames, successFrame } from "./assets/frames";
+import { GitOperationError, GitErrorCode } from "./types";
 
 class PushCLI {
   private readonly git: GitService;
@@ -82,10 +83,44 @@ class PushCLI {
    * @private
    */
   private handleError(error: unknown): void {
-    if (this.git.isGitError(error)) {
-      console.error(ERROR_MESSAGES.GIT_ERROR, error.message);
+    if (error instanceof GitOperationError) {
+      // Log the main error message
+      switch (error.code) {
+        case GitErrorCode.AUTH_FAILED:
+        case GitErrorCode.PERMISSION_DENIED:
+          console.error(ERROR_MESSAGES[error.code]);
+          console.log(ERROR_MESSAGES.AUTH_HELP);
+          break;
+          
+        case GitErrorCode.NO_REMOTE:
+        case GitErrorCode.REMOTE_NOT_FOUND:
+        case GitErrorCode.REMOTE_DISCONNECTED:
+          console.error(ERROR_MESSAGES[error.code]);
+          console.log(ERROR_MESSAGES.REMOTE_HELP);
+          break;
+          
+        case GitErrorCode.MERGE_CONFLICT:
+          console.error(ERROR_MESSAGES.MERGE_CONFLICT);
+          console.log(ERROR_MESSAGES.MERGE_HELP);
+          break;
+          
+        case GitErrorCode.GIT_NOT_INSTALLED:
+          console.error(ERROR_MESSAGES.GIT_NOT_INSTALLED);
+          break;
+          
+        default:
+          console.error(ERROR_MESSAGES[error.code] || ERROR_MESSAGES.UNKNOWN_ERROR);
+      }
+
+      // Log additional debug information if available
+      if (error.originalError && process.env.DEBUG) {
+        console.debug('Original error:', error.originalError);
+      }
     } else if (error instanceof Error) {
-      console.error("❌ Error:", error.message);
+      console.error(ERROR_MESSAGES.UNKNOWN_ERROR);
+      if (process.env.DEBUG) {
+        console.debug('Error details:', error);
+      }
     } else {
       console.error(ERROR_MESSAGES.UNKNOWN_ERROR);
     }
